@@ -11,12 +11,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import io.github.jan.supabase.auth.handleDeeplinks
+import nl.theeuwesit.stapje.sync.Cloud
 import nl.theeuwesit.stapje.ui.App
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var reminders: AndroidReminders
     private var openTodaySignal by mutableIntStateOf(0)
+    private var resumeSignal by mutableIntStateOf(0)
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { reminders.refresh() }
@@ -33,12 +36,13 @@ class MainActivity : ComponentActivity() {
             reminders = reminders,
             isWeb = false,
             now = ::androidNow,
+            cloud = Cloud.client,
         )
 
         handleIntent(intent)
         reminders.requestOnFirstStart()
 
-        setContent { App(platform, openTodaySignal) }
+        setContent { App(platform, openTodaySignal, resumeSignal) }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -49,9 +53,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         reminders.refresh()
+        resumeSignal++
     }
 
     private fun handleIntent(intent: Intent?) {
+        if (intent != null) Cloud.client?.handleDeeplinks(intent)
         if (intent?.getBooleanExtra(EXTRA_OPEN_TODAY, false) == true) {
             intent.removeExtra(EXTRA_OPEN_TODAY)
             openTodaySignal++

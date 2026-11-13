@@ -48,6 +48,7 @@ fun SettingsScreen(
     isWeb: Boolean,
     onChange: (Settings) -> Unit,
     onBack: () -> Unit,
+    accountSection: (@Composable () -> Unit)? = null,
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
     var newActivity by remember { mutableStateOf("") }
@@ -77,6 +78,8 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                accountSection?.invoke()
+
                 Section("Herinnering") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

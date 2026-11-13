@@ -48,12 +48,32 @@ Je hebt JDK 17 of nieuwer en de Android SDK nodig. Android Studio (met de Kotlin
 
 ## Goed om te weten
 
-- **Opslag is lokaal.** De Android-app en de website hebben elk hun eigen gegevens (SharedPreferences en localStorage van de browser). Om ze te synchroniseren is een backend nodig, bijvoorbeeld Supabase of Firebase. De `KeyValueStore`/`Repository`-laag is zo opgezet dat die later te vervangen is.
+- **Opslag is lokaal, met synchronisatie als optie.** Zonder Supabase-gegevens werkt de app volledig offline. Met Supabase en Google-login blijven Android en web gelijk (zie hieronder). Ook ingelogd blijft alles offline werken: wijzigingen gaan mee bij de volgende synchronisatie.
 - **Herinneringen op web** werken alleen zolang de pagina open staat, omdat een gewone website zonder server geen meldingen kan sturen als hij dicht is. Op Android werkt de herinnering altijd, ook na een herstart.
 - **Android 13+** vraagt bij de eerste start om toestemming voor meldingen. Weiger je die, dan opent de knop *Meldingen toestaan* de systeeminstellingen.
 - De herinnering gebruikt `setAndAllowWhileIdle`. In de spaarstand kan Android hem een paar minuten later afleveren. Daarvoor is geen extra toestemming voor exacte alarmen nodig.
 
+## Synchronisatie (Supabase + Google-login)
+
+Hoe het werkt: elke dag en de instellingen krijgen een tijdstempel. Bij het synchroniseren wint per dag de nieuwste wijziging, en verwijderde dagen worden op alle apparaten verwijderd. Er wordt gesynchroniseerd:
+- na inloggen,
+- na elke wijziging,
+- als de app weer op de voorgrond komt,
+- elke 5 minuten,
+- op Android ook vlak voor de herinnering, zodat je geen melding krijgt als je de dag al op de website hebt ingevuld.
+
+Eenmalig instellen:
+
+1. **Database.** Voer `supabase/migrations/20261113000000_stapje_init.sql` uit in de SQL-editor van je Supabase-project, of met `supabase db push`. Dit maakt `day_entries` en `user_settings` aan, met Row Level Security: iedereen ziet alleen zijn eigen gegevens.
+2. **Google Cloud.** Ga naar *APIs & Services → Credentials* en maak een *OAuth client ID* van het type **Web application** aan.
+   - Bij *Authorized redirect URIs* zet je `https://<jouw-project>.supabase.co/auth/v1/callback`.
+3. **Supabase → Authentication → Sign In / Providers → Google.** Zet de provider aan en vul het client ID en secret uit stap 2 in.
+4. **Supabase → Authentication → URL Configuration.**
+   - *Site URL*: het adres van de website, bijvoorbeeld `https://theeuwes-it.github.io/stapje/`.
+   - *Redirect URLs*: voeg zowel dat adres toe als `stapje://login` (voor de Android-app).
+5. **App.** Vul in `composeApp/src/commonMain/kotlin/nl/theeuwesit/stapje/sync/SupabaseConfig.kt` de project-URL en de *publishable key* (of *anon key*) in. Die sleutel is bedoeld om in apps te staan. De gegevens worden beschermd door Row Level Security.
+
 ## Versies
 
-Kotlin 2.1.21 · Compose Multiplatform 1.8.2 · AGP 8.7.3 · Gradle 8.14.3 · minSdk 26 / targetSdk 35.
+Kotlin 2.1.21 · Compose Multiplatform 1.8.2 · supabase-kt 3.1.4 · Ktor 3.1.3 · AGP 8.7.3 · Gradle 8.14.3 · minSdk 26 / targetSdk 35.
 Pas `gradle/libs.versions.toml` aan als je nieuwere versies wilt gebruiken.
