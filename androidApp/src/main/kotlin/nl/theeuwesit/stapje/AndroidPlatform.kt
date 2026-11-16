@@ -1,8 +1,6 @@
 package nl.theeuwesit.stapje
 
 import android.content.Context
-import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.Composable
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import nl.theeuwesit.stapje.data.KeyValueStore
@@ -23,8 +21,3 @@ fun androidNow(): LocalDateTime {
 }
 
 fun androidToday(): LocalDate = androidNow().date
-
-@Composable
-actual fun PlatformBackHandler(enabled: Boolean, onBack: () -> Unit) {
-    BackHandler(enabled = enabled, onBack = onBack)
-}

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalWasmJsInterop::class)
+
 package nl.theeuwesit.stapje
 
 import androidx.compose.runtime.Composable

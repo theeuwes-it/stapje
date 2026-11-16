@@ -21,19 +21,21 @@ Compose Multiplatform-app (Android + web) om per werkdag bij te houden:
 ## Projectstructuur
 
 ```
-composeApp/src/
-  commonMain/   gedeelde code: model, opslag (JSON), herinneringslogica, alle schermen
-  androidMain/  MainActivity, SharedPreferences, AlarmManager, meldingen, herstart-receiver
+composeApp/src/          gedeelde Kotlin Multiplatform-module
+  commonMain/   model, opslag (JSON), herinneringslogica, alle schermen
+  androidMain/  Android-specifieke stukjes van de gedeelde code (terugknop)
   wasmJsMain/   web-ingang, localStorage, browsermeldingen, index.html
+androidApp/src/main/     Android-app
+                MainActivity, SharedPreferences, AlarmManager, meldingen, herstart-receiver
 ```
 
 ## Bouwen en draaien
 
-Je hebt JDK 17 of nieuwer en de Android SDK nodig. Android Studio (met de Kotlin Multiplatform-plugin) of IntelliJ IDEA werkt het makkelijkst.
+Je hebt JDK 21 of nieuwer en de Android SDK nodig. Android Studio (met de Kotlin Multiplatform-plugin) of IntelliJ IDEA werkt het makkelijkst.
 
 ```bash
 # Android: debug-APK installeren op een aangesloten telefoon/emulator
-./gradlew :composeApp:installDebug
+./gradlew :androidApp:installDebug
 
 # Web: ontwikkelserver met live reload (opent http://localhost:8080)
 ./gradlew :composeApp:wasmJsBrowserDevelopmentRun

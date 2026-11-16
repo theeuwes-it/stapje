@@ -4,6 +4,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
+import kotlinx.datetime.number
 import nl.theeuwesit.stapje.model.DayEntry
 import nl.theeuwesit.stapje.model.DayPart
 import kotlin.math.abs
@@ -34,7 +35,7 @@ fun formatTime(hour: Int, minute: Int): String =
 
 /** "vrijdag 13 november" */
 fun LocalDate.longLabel(): String =
-    "${DAY_NAMES[dayOfWeek.isoDayNumber - 1]} $dayOfMonth ${MONTHS[monthNumber - 1]}"
+    "${DAY_NAMES[dayOfWeek.isoDayNumber - 1]} $day ${MONTHS[month.number - 1]}"
 
 fun String.capitalized(): String = replaceFirstChar { it.uppercase() }
 
