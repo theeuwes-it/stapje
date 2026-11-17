@@ -6,7 +6,7 @@ Compose Multiplatform-app (Android + web) om per werkdag bij te houden:
 
 - **Gewerkt**: hele dag / ochtend / middag / niet gewerkt, plus het aantal uren (stappen van een half uur)
 - **Wat gedaan**: activiteiten om aan te tikken (zelf aan te passen), plus een schakelaar **Labwerk** met uren en omschrijving
-- **Hoe gaat het**: pijn algemeen, rugpijn, energie en gevoel, elk met één tik op een schaal van 0 tot 10
+- **Hoe gaat het**: per dagdeel (ochtend, middag, avond) pijn algemeen, rugpijn, energie en gevoel, elk met één tik op een schaal van 0 tot 10. Een dagdeel mag leeg blijven en later worden aangevuld.
 - **Herinnering** op een zelf gekozen tijdstip, alleen op werkdagen die nog niet zijn ingevuld
 
 ## Zo snel mogelijk invullen

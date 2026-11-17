@@ -10,7 +10,7 @@ enum class DayPart(val label: String) {
     NIET_GEWERKT("Niet gewerkt"),
 }
 
-/** Eén ingevulde dag. Scores lopen van 0 t/m 10. */
+/** Eén ingevulde dag. */
 @Serializable
 data class DayEntry(
     /** ISO-datum, bijv. 2026-11-13 */
@@ -22,6 +22,21 @@ data class DayEntry(
     val labHours: Double = 0.0,
     val labDescription: String = "",
     val note: String = "",
+    /** Scores per dagdeel; een dagdeel dat (nog) niet is ingevuld ontbreekt. */
+    val scores: Map<TimeOfDay, Scores> = emptyMap(),
+)
+
+/** Dagdeel waarvoor je invult hoe het gaat. */
+@Serializable
+enum class TimeOfDay(val label: String) {
+    OCHTEND("Ochtend"),
+    MIDDAG("Middag"),
+    AVOND("Avond"),
+}
+
+/** Hoe het gaat in één dagdeel. Scores lopen van 0 t/m 10. */
+@Serializable
+data class Scores(
     /** 0 = geen pijn, 10 = ergst denkbaar */
     val painOverall: Int,
     /** 0 = geen rugpijn, 10 = ergst denkbaar */
