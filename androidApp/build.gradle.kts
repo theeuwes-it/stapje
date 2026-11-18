@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+// Release-ondertekening en versienummer komen in CI uit omgevingsvariabelen (zie README).
+// Zonder deze variabelen bouwt een release-build gewoon, maar dan niet ondertekend.
+fun env(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "nl.theeuwesit.stapje"
     compileSdk = 37
@@ -11,8 +15,16 @@ android {
         applicationId = "nl.theeuwesit.stapje"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = env("VERSION_CODE")?.toInt() ?: 1
+        versionName = env("VERSION_NAME") ?: "1.0"
+    }
+    signingConfigs {
+        create("release") {
+            env("STAPJE_KEYSTORE_FILE")?.let { storeFile = file(it) }
+            storePassword = env("STAPJE_KEYSTORE_PASSWORD")
+            keyAlias = env("STAPJE_KEY_ALIAS")
+            keyPassword = env("STAPJE_KEY_PASSWORD")
+        }
     }
     packaging {
         resources {
@@ -22,6 +34,9 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            if (env("STAPJE_KEYSTORE_FILE") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
