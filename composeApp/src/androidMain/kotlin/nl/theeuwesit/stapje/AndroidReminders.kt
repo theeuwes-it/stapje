@@ -18,6 +18,15 @@ import nl.theeuwesit.stapje.data.Repository
 import nl.theeuwesit.stapje.model.Settings
 import nl.theeuwesit.stapje.reminder.ReminderController
 import nl.theeuwesit.stapje.reminder.ReminderLogic
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import nl.theeuwesit.stapje.sync.Cloud
+import nl.theeuwesit.stapje.sync.CloudSync
 import java.time.ZonedDateTime
 
 class AndroidReminders(
@@ -108,20 +117,41 @@ object ReminderScheduler {
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val repo = Repository(SharedPrefsStore(context))
-        val settings = repo.loadSettings()
-        when (intent.action) {
-            ACTION_SNOOZE -> {
-                NotificationManagerCompat.from(context).cancel(Notifications.ID)
-                ReminderScheduler.snooze(context)
-            }
+        if (intent.action == ACTION_SNOOZE) {
+            NotificationManagerCompat.from(context).cancel(Notifications.ID)
+            ReminderScheduler.snooze(context)
+            return
+        }
+        if (intent.action != ACTION_DAILY && intent.action != ACTION_SNOOZED) return
 
-            ACTION_DAILY, ACTION_SNOOZED -> {
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val repo = Repository(SharedPrefsStore(context))
+                // Eerst synchroniseren: misschien is vandaag al op de website ingevuld.
+                syncQuietly(repo)
+                val settings = repo.loadSettings()
                 if (ReminderLogic.needsReminder(androidToday(), settings, repo.loadEntries())) {
                     Notifications.showReminder(context)
                 }
                 if (intent.action == ACTION_DAILY) ReminderScheduler.schedule(context, settings)
+            } finally {
+                pending.finish()
             }
+        }
+    }
+
+    private suspend fun syncQuietly(repo: Repository) {
+        val client = Cloud.client ?: return
+        try {
+            withTimeoutOrNull(8_000) {
+                val status = client.auth.sessionStatus.first {
+                    it is SessionStatus.Authenticated || it is SessionStatus.NotAuthenticated
+                }
+                if (status is SessionStatus.Authenticated) CloudSync.sync(client, repo)
+            }
+        } catch (_: Exception) {
+            // Geen netwerk: dan beslissen we op basis van de lokale gegevens.
         }
     }
 

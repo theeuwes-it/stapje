@@ -30,6 +30,8 @@ data class DayEntry(
     val energy: Int,
     /** 0 = slecht, 10 = heel goed */
     val mood: Int,
+    /** Laatste wijziging (ms sinds 1970), voor synchronisatie. */
+    val updatedAt: Long = 0L,
 )
 
 val DEFAULT_ACTIVITIES = listOf(
@@ -51,4 +53,6 @@ data class Settings(
     val workdays: List<Int> = listOf(1, 2, 3, 4, 5),
     val fullDayHours: Double = 8.0,
     val activities: List<String> = DEFAULT_ACTIVITIES,
+    /** Laatste wijziging (ms sinds 1970), voor synchronisatie. */
+    val updatedAt: Long = 0L,
 )

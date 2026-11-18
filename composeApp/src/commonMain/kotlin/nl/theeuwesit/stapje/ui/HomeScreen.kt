@@ -46,6 +46,7 @@ fun HomeScreen(
     reminders: ReminderController,
     onOpenDay: (LocalDate) -> Unit,
     onOpenSettings: () -> Unit,
+    topSlot: (@Composable () -> Unit)? = null,
 ) {
     val today = state.today
     val settings = state.settings
@@ -70,6 +71,9 @@ fun HomeScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                if (topSlot != null) {
+                    item { topSlot() }
+                }
                 if (settings.reminderEnabled && !reminders.permissionGranted) {
                     item { PermissionBanner(reminders) }
                 }

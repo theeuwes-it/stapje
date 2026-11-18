@@ -6,11 +6,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
+import io.github.jan.supabase.auth.auth
 import kotlinx.browser.document
 import kotlinx.datetime.LocalDateTime
 import nl.theeuwesit.stapje.data.KeyValueStore
 import nl.theeuwesit.stapje.model.Settings
 import nl.theeuwesit.stapje.reminder.ReminderController
+import nl.theeuwesit.stapje.sync.Cloud
 import nl.theeuwesit.stapje.ui.App
 
 // --- Kleine JavaScript-bruggetjes -------------------------------------------------------------
@@ -31,6 +33,15 @@ private fun jsShowNotification(title: String, body: String): Unit =
 /** "jaar,maand,dag,uur,minuut" in de lokale tijd van de browser. */
 private fun jsNowParts(): String =
     js("(function () { var d = new Date(); return [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()].join(','); })()")
+
+/** De `code` die Supabase na het inloggen aan de URL toevoegt, of null. */
+private fun jsAuthCode(): String? = js("new URLSearchParams(window.location.search).get('code')")
+
+/** Haalt ?code=... weer uit de adresbalk. */
+private fun jsCleanUrl(): Unit = js("void window.history.replaceState(null, '', window.location.pathname + window.location.hash)")
+
+/** Adres van deze pagina zonder query, bijv. https://theeuwes-it.github.io/stapje/ */
+private fun jsPageUrl(): String = js("window.location.origin + window.location.pathname")
 
 // --- Platformimplementaties ------------------------------------------------------------------
 
@@ -73,11 +84,22 @@ actual fun PlatformBackHandler(enabled: Boolean, onBack: () -> Unit) {
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
+    val cloud = Cloud.init()
     val platform = Platform(
         store = WebStore(),
         reminders = WebReminders(),
         isWeb = true,
         now = ::webNow,
+        cloud = cloud,
+        authRedirectUrl = jsPageUrl(),
+        startup = {
+            val code = jsAuthCode()
+            if (cloud != null && code != null) {
+                jsCleanUrl()
+                // De bibliotheek kan de code zelf al verwerkt hebben; een tweede poging mag mislukken.
+                runCatching { cloud.auth.exchangeCodeForSession(code) }
+            }
+        },
     )
     ComposeViewport(document.body!!) {
         App(platform)
