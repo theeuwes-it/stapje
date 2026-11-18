@@ -77,5 +77,5 @@ Eenmalig instellen:
 
 ## Versies
 
-Kotlin 2.1.21 · Compose Multiplatform 1.8.2 · supabase-kt 3.1.4 · Ktor 3.1.3 · AGP 8.7.3 · Gradle 8.14.3 · minSdk 26 / targetSdk 35.
+Kotlin 2.4.21 · Compose Multiplatform 1.12.2 · supabase-kt 3.1.4 · Ktor 3.1.3 · AGP 9.5.1 · Gradle 9.9.1 · minSdk 26 / targetSdk 37.
 Pas `gradle/libs.versions.toml` aan als je nieuwere versies wilt gebruiken.
