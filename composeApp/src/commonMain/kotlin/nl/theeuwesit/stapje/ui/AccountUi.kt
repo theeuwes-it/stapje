@@ -20,7 +20,7 @@ import nl.theeuwesit.stapje.sync.SyncController
 
 /** Kaart op het startscherm zolang je niet bent ingelogd. */
 @Composable
-fun SyncPromptCard(onSignIn: () -> Unit, onDismiss: () -> Unit) {
+fun SyncPromptCard(error: String?, onSignIn: () -> Unit, onDismiss: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -34,6 +34,9 @@ fun SyncPromptCard(onSignIn: () -> Unit, onDismiss: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = onSignIn) { Text("Inloggen met Google") }
                 TextButton(onClick = onDismiss) { Text("Niet nu") }
+            }
+            error?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
         }
     }

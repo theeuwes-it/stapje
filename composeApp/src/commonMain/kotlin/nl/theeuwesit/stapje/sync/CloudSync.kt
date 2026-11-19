@@ -4,12 +4,20 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.AuthConfig
 import io.github.jan.supabase.auth.FlowType
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlin.time.Clock
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -45,6 +53,41 @@ object Cloud {
             }
             install(Postgrest)
         }.also { client = it }
+    }
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val _loginError = MutableStateFlow<String?>(null)
+
+    /** Foutmelding van de laatste terugkeer na inloggen, of null. */
+    val loginError: StateFlow<String?> = _loginError
+
+    fun clearLoginError() {
+        _loginError.value = null
+    }
+
+    /**
+     * Verwerkt de terugkeer na inloggen met Google (Android: stapje://login?code=...).
+     * [params] zijn de query- en fragmentparameters van dat adres. Fouten komen in [loginError].
+     */
+    fun completeLogin(params: Map<String, String>) {
+        val client = client ?: return
+        _loginError.value = null
+        val error = params["error_description"] ?: params["error"]
+        val code = params["code"]
+        when {
+            error != null -> _loginError.value = "Inloggen is niet gelukt: $error"
+            code == null -> _loginError.value =
+                "Inloggen is niet gelukt: geen inlogcode ontvangen (parameters: ${params.keys.joinToString().ifEmpty { "geen" }})."
+            else -> scope.launch {
+                try {
+                    client.auth.exchangeCodeForSession(code)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    _loginError.value = "Inloggen is niet gelukt: ${e.message ?: e::class.simpleName}"
+                }
+            }
+        }
     }
 }
 
