@@ -8,3 +8,7 @@ local.properties
 captures
 !*.xcodeproj/*
 kotlin-js-store
+
+# Ondertekeningssleutels nooit committen
+*.jks
+*.keystore

@@ -48,6 +48,46 @@ Je hebt JDK 21 of nieuwer en de Android SDK nodig. Android Studio (met de Kotlin
 ### GitHub
 `.github/workflows/build.yml` bouwt bij elke push naar `main` de APK (als downloadbaar artifact) en zet de website op GitHub Pages. Zet daarvoor in de repository bij *Settings → Pages* de bron op **GitHub Actions**.
 
+### Google Play
+
+De job `play-store` in dezelfde workflow bouwt een ondertekende release-bundle (`.aab`) en uploadt die naar Google Play:
+
+- bij een push naar `main` naar de track **internal** (interne test);
+- via *Actions → Build → Run workflow* naar een track naar keuze (internal, alpha, beta of production).
+
+Het versienummer gaat vanzelf: `versionCode` is het runnummer van de workflow, `versionName` wordt `1.0.<runnummer>`.
+
+**Eenmalig instellen**
+
+1. **Uploadsleutel maken** (bewaar het bestand en de wachtwoorden goed, bijvoorbeeld in een wachtwoordmanager):
+   ```bash
+   keytool -genkeypair -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+   ```
+2. **App aanmaken in de [Play Console](https://play.google.com/console)** met pakketnaam `nl.theeuwesit.stapje` en *Play App Signing* aanzetten. Google beheert dan de echte app-sleutel; `upload.jks` is alleen je uploadsleutel.
+3. **Eerste versie met de hand uploaden.** De Play API kan pas uploaden als er al één bundle in de Console staat. Bouw die lokaal met dezelfde variabelen als in CI:
+   ```bash
+   STAPJE_KEYSTORE_FILE=$PWD/upload.jks STAPJE_KEYSTORE_PASSWORD=… STAPJE_KEY_ALIAS=upload STAPJE_KEY_PASSWORD=… \
+     ./gradlew :androidApp:bundleRelease
+   # -> androidApp/build/outputs/bundle/release/androidApp-release.aab
+   ```
+   en upload die bij *Testen → Interne test*.
+4. **Serviceaccount voor de upload:** maak in Google Cloud een serviceaccount met een JSON-sleutel en nodig het in de Play Console uit (*Gebruikers en rechten*) met rechten om releases te beheren voor deze app.
+5. **Secrets in GitHub** (*Settings → Secrets and variables → Actions*):
+
+   | Secret | Inhoud |
+   |---|---|
+   | `ANDROID_KEYSTORE_BASE64` | uitvoer van `base64 -i upload.jks` |
+   | `ANDROID_KEYSTORE_PASSWORD` | wachtwoord van de keystore |
+   | `ANDROID_KEY_ALIAS` | `upload` (of de alias die je koos) |
+   | `ANDROID_KEY_PASSWORD` | wachtwoord van de sleutel |
+   | `PLAY_SERVICE_ACCOUNT_JSON` | de volledige inhoud van het JSON-sleutelbestand |
+
+6. **Aanzetten:** maak onder *Variables* de variabele `PLAY_UPLOAD_ENABLED` met waarde `true`. Zolang die er niet is, slaat de workflow de Play-job over.
+
+Zolang de app in de Play Console nog nooit gepubliceerd is, accepteert Google alleen conceptreleases. Zet dan ook de variabele `PLAY_RELEASE_STATUS` op `draft` en haal die weg na de eerste goedkeuring.
+
+De job draait in de GitHub-omgeving `play-store`. Wil je elke upload eerst goedkeuren, zet dan bij *Settings → Environments → play-store* een *Required reviewer* aan.
+
 ## Goed om te weten
 
 - **Opslag is lokaal, met synchronisatie als optie.** Zonder Supabase-gegevens werkt de app volledig offline. Met Supabase en Google-login blijven Android en web gelijk (zie hieronder). Ook ingelogd blijft alles offline werken: wijzigingen gaan mee bij de volgende synchronisatie.
@@ -73,7 +113,16 @@ Eenmalig instellen:
 4. **Supabase → Authentication → URL Configuration.**
    - *Site URL*: het adres van de website, bijvoorbeeld `https://theeuwes-it.github.io/stapje/`.
    - *Redirect URLs*: voeg zowel dat adres toe als `stapje://login` (voor de Android-app).
-5. **App.** Vul in `composeApp/src/commonMain/kotlin/nl/theeuwesit/stapje/sync/SupabaseConfig.kt` de project-URL en de *publishable key* (of *anon key*) in. Die sleutel is bedoeld om in apps te staan. De gegevens worden beschermd door Row Level Security.
+5. **App.** De project-URL en de *publishable key* (of *anon key*) komen uit *Project Settings → API*. Die sleutel is bedoeld om in apps te staan. De gegevens worden beschermd door Row Level Security. De build zet ze in een gegenereerd `SupabaseConfig.kt`:
+   - **GitHub Actions:** maak bij *Settings → Secrets and variables → Actions → Variables* de variabelen `SUPABASE_URL` en `SUPABASE_PUBLISHABLE_KEY` aan. De workflow gebruikt ze voor de website, de APK en de Play-bundle.
+   - **Lokaal:** zet ze in `local.properties` (staat niet in git):
+     ```properties
+     supabase.url=https://<jouw-project>.supabase.co
+     supabase.publishableKey=sb_publishable_…
+     ```
+     Omgevingsvariabelen `SUPABASE_URL` en `SUPABASE_PUBLISHABLE_KEY` gaan voor.
+
+   Zonder deze gegevens werkt de app alleen lokaal, zonder inloggen.
 
 ## Versies
 
