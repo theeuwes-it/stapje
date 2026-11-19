@@ -24,6 +24,8 @@ data class DayEntry(
     val note: String = "",
     /** Scores per dagdeel; een dagdeel dat (nog) niet is ingevuld ontbreekt. */
     val scores: Map<TimeOfDay, Scores> = emptyMap(),
+    /** Laatste wijziging (ms sinds 1970), voor synchronisatie. */
+    val updatedAt: Long = 0L,
 )
 
 /** Dagdeel waarvoor je invult hoe het gaat. */
@@ -45,8 +47,6 @@ data class Scores(
     val energy: Int,
     /** 0 = slecht, 10 = heel goed */
     val mood: Int,
-    /** Laatste wijziging (ms sinds 1970), voor synchronisatie. */
-    val updatedAt: Long = 0L,
 )
 
 val DEFAULT_ACTIVITIES = listOf(

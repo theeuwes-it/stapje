@@ -9,14 +9,16 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.serializer.KotlinXSerializer
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import nl.theeuwesit.stapje.data.Repository
 import nl.theeuwesit.stapje.model.DayEntry
 import nl.theeuwesit.stapje.model.DayPart
+import nl.theeuwesit.stapje.model.Scores
 import nl.theeuwesit.stapje.model.Settings
+import nl.theeuwesit.stapje.model.TimeOfDay
 
 fun nowMillis(): Long = Clock.System.now().toEpochMilliseconds()
 
@@ -56,10 +58,7 @@ data class EntryRow(
     @SerialName("lab_hours") val labHours: Double = 0.0,
     @SerialName("lab_description") val labDescription: String = "",
     val note: String = "",
-    @SerialName("pain_overall") val painOverall: Int? = null,
-    @SerialName("back_pain") val backPain: Int? = null,
-    val energy: Int? = null,
-    val mood: Int? = null,
+    val scores: Map<TimeOfDay, Scores> = emptyMap(),
     @SerialName("updated_at_ms") val updatedAtMs: Long,
     val deleted: Boolean = false,
 )
@@ -79,10 +78,7 @@ private fun DayEntry.toRow() = EntryRow(
     labHours = labHours,
     labDescription = labDescription,
     note = note,
-    painOverall = painOverall,
-    backPain = backPain,
-    energy = energy,
-    mood = mood,
+    scores = scores,
     updatedAtMs = updatedAt,
     deleted = false,
 )
@@ -97,10 +93,7 @@ private fun EntryRow.toEntry(): DayEntry? {
         labHours = labHours,
         labDescription = labDescription,
         note = note,
-        painOverall = painOverall ?: return null,
-        backPain = backPain ?: return null,
-        energy = energy ?: return null,
-        mood = mood ?: return null,
+        scores = scores,
         updatedAt = updatedAtMs,
     )
 }
@@ -114,7 +107,7 @@ object CloudSync {
     private const val SETTINGS = "user_settings"
     private const val ENTRY_COLUMNS =
         "date,day_part,hours,activities,lab_work,lab_hours,lab_description,note," +
-            "pain_overall,back_pain,energy,mood,updated_at_ms,deleted"
+            "scores,updated_at_ms,deleted"
 
     private fun localRow(date: String, entries: Map<String, DayEntry>, tombstones: Map<String, Long>): EntryRow? {
         val entry = entries[date]

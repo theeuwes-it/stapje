@@ -11,10 +11,8 @@ create table if not exists public.day_entries (
     lab_hours       double precision not null default 0,
     lab_description text not null default '',
     note            text not null default '',
-    pain_overall    smallint check (pain_overall between 0 and 10),
-    back_pain       smallint check (back_pain between 0 and 10),
-    energy          smallint check (energy between 0 and 10),
-    mood            smallint check (mood between 0 and 10),
+    -- Scores per dagdeel, bijv. {"OCHTEND": {"painOverall": 3, "backPain": 2, "energy": 6, "mood": 7}}.
+    scores          jsonb not null default '{}'::jsonb,
     -- Tijdstip van de laatste wijziging op het apparaat (ms sinds 1970); nieuwste wint.
     updated_at_ms   bigint not null,
     -- Verwijderde dagen blijven als markering bestaan, zodat andere apparaten ze ook verwijderen.
