@@ -4,8 +4,11 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
+import kotlinx.datetime.number
 import nl.theeuwesit.stapje.model.DayEntry
 import nl.theeuwesit.stapje.model.DayPart
+import nl.theeuwesit.stapje.model.Scores
+import nl.theeuwesit.stapje.model.TimeOfDay
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -34,7 +37,7 @@ fun formatTime(hour: Int, minute: Int): String =
 
 /** "vrijdag 13 november" */
 fun LocalDate.longLabel(): String =
-    "${DAY_NAMES[dayOfWeek.isoDayNumber - 1]} $dayOfMonth ${MONTHS[monthNumber - 1]}"
+    "${DAY_NAMES[dayOfWeek.isoDayNumber - 1]} $day ${MONTHS[month.number - 1]}"
 
 fun String.capitalized(): String = replaceFirstChar { it.uppercase() }
 
@@ -52,5 +55,9 @@ fun DayEntry.workSummary(): String = buildList {
     if (activities.isNotEmpty()) add(activities.joinToString(", "))
 }.joinToString(" · ")
 
+fun Scores.summary(): String = "Pijn $painOverall · Rug $backPain · Energie $energy · Gevoel $mood"
+
+/** Eén regel per ingevuld dagdeel, bijv. "Ochtend: Pijn 3 · Rug 2 · Energie 6 · Gevoel 7". */
 fun DayEntry.scoreSummary(): String =
-    "Pijn $painOverall · Rug $backPain · Energie $energy · Gevoel $mood"
+    if (scores.isEmpty()) "Nog geen scores ingevuld"
+    else TimeOfDay.entries.mapNotNull { t -> scores[t]?.let { "${t.label}: ${it.summary()}" } }.joinToString("\n")

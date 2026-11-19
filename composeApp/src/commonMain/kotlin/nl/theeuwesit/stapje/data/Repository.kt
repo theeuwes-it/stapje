@@ -60,7 +60,7 @@ class Repository(private val store: KeyValueStore) {
     fun setLastInAppReminderDate(date: String) = store.put(KEY_LAST_IN_APP_REMINDER, date)
 
     private companion object {
-        const val KEY_ENTRIES = "entries_v1"
+        const val KEY_ENTRIES = "entries_v2"
         const val KEY_SETTINGS = "settings_v1"
         const val KEY_LAST_IN_APP_REMINDER = "last_in_app_reminder"
         const val KEY_TOMBSTONES = "tombstones_v1"

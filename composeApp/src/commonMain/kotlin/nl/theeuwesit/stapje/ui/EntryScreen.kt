@@ -39,7 +39,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 import nl.theeuwesit.stapje.model.DayEntry
 import nl.theeuwesit.stapje.model.DayPart
+import nl.theeuwesit.stapje.model.Scores
 import nl.theeuwesit.stapje.model.Settings
+import nl.theeuwesit.stapje.model.TimeOfDay
 import kotlin.math.roundToInt
 
 private fun defaultHoursFor(part: DayPart, settings: Settings): Double = when (part) {
@@ -47,6 +49,23 @@ private fun defaultHoursFor(part: DayPart, settings: Settings): Double = when (p
     DayPart.OCHTEND, DayPart.MIDDAG -> (settings.fullDayHours).roundToInt() / 2.0
     DayPart.NIET_GEWERKT -> 0.0
 }
+
+/** Scores van één dagdeel terwijl je ze invult; null = nog niet beantwoord. */
+private data class ScoresDraft(
+    val pain: Int? = null,
+    val back: Int? = null,
+    val energy: Int? = null,
+    val mood: Int? = null,
+) {
+    val answered: Int get() = listOf(pain, back, energy, mood).count { it != null }
+    val isEmpty: Boolean get() = answered == 0
+    val isComplete: Boolean get() = answered == 4
+
+    fun toScores(): Scores = Scores(painOverall = pain!!, backPain = back!!, energy = energy!!, mood = mood!!)
+}
+
+private fun Scores?.toDraft(): ScoresDraft =
+    if (this == null) ScoresDraft() else ScoresDraft(painOverall, backPain, energy, mood)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -70,14 +89,24 @@ fun EntryScreen(
     var labHours by remember(date) { mutableStateOf(existing?.labHours?.takeIf { it > 0 } ?: 1.0) }
     var labDescription by remember(date) { mutableStateOf(existing?.labDescription ?: "") }
     var note by remember(date) { mutableStateOf(existing?.note ?: "") }
-    var pain by remember(date) { mutableStateOf(existing?.painOverall) }
-    var back by remember(date) { mutableStateOf(existing?.backPain) }
-    var energy by remember(date) { mutableStateOf(existing?.energy) }
-    var mood by remember(date) { mutableStateOf(existing?.mood) }
+    var drafts by remember(date) {
+        mutableStateOf(TimeOfDay.entries.associateWith { existing?.scores?.get(it).toDraft() })
+    }
+    // Begin bij het eerste dagdeel dat nog niet helemaal is ingevuld.
+    var period by remember(date) {
+        mutableStateOf(TimeOfDay.entries.firstOrNull { drafts.getValue(it).isComplete.not() } ?: TimeOfDay.OCHTEND)
+    }
+    val draft = drafts.getValue(period)
+    fun updateDraft(change: (ScoresDraft) -> ScoresDraft) {
+        drafts = drafts + (period to change(draft))
+    }
     var confirmDelete by remember { mutableStateOf(false) }
 
     val worked = dayPart != null && dayPart != DayPart.NIET_GEWERKT
-    val missing = listOf(dayPart, pain, back, energy, mood).count { it == null }
+    // Elk dagdeel is leeg of helemaal ingevuld; minstens één dagdeel moet ingevuld zijn.
+    val partialMissing = drafts.values.filter { !it.isEmpty && !it.isComplete }.sumOf { 4 - it.answered }
+    val noneStarted = drafts.values.all { it.isEmpty }
+    val missing = (if (dayPart == null) 1 else 0) + partialMissing + (if (noneStarted) 4 else 0)
 
     fun buildEntry(): DayEntry {
         val chosen = settings.activities.filter { it in activities } + activities.filter { it !in settings.activities }
@@ -90,10 +119,7 @@ fun EntryScreen(
             labHours = if (worked && labWork) labHours.coerceAtMost(hours) else 0.0,
             labDescription = if (worked && labWork) labDescription.trim() else "",
             note = note.trim(),
-            painOverall = pain!!,
-            backPain = back!!,
-            energy = energy!!,
-            mood = mood!!,
+            scores = drafts.filterValues { it.isComplete }.mapValues { it.value.toScores() },
         )
     }
 
@@ -216,11 +242,46 @@ fun EntryScreen(
                 }
 
                 // 3. Hoe gaat het
-                Section("Hoe gaat het met je?", subtitle = "Tik op een cijfer van 0 tot 10") {
-                    ScoreQuestion("Pijn algemeen", "geen pijn", "ergst denkbaar", pain, highIsGood = false) { pain = it }
-                    ScoreQuestion("Rugpijn", "geen", "ergst denkbaar", back, highIsGood = false) { back = it }
-                    ScoreQuestion("Energie", "leeg", "vol energie", energy, highIsGood = true) { energy = it }
-                    ScoreQuestion("Gevoel", "slecht", "heel goed", mood, highIsGood = true) { mood = it }
+                Section(
+                    "Hoe gaat het met je?",
+                    subtitle = "Per dagdeel een cijfer van 0 tot 10. Later op de dag aanvullen kan ook.",
+                ) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TimeOfDay.entries.forEach { p ->
+                            val d = drafts.getValue(p)
+                            FilterChip(
+                                selected = period == p,
+                                onClick = { period = p },
+                                label = {
+                                    Text(
+                                        when {
+                                            d.isComplete -> "${p.label} ✓"
+                                            d.isEmpty -> p.label
+                                            else -> "${p.label} ${d.answered}/4"
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                    }
+                    ScoreQuestion("Pijn algemeen", "geen pijn", "ergst denkbaar", draft.pain, highIsGood = false) { v ->
+                        updateDraft { it.copy(pain = v) }
+                    }
+                    ScoreQuestion("Rugpijn", "geen", "ergst denkbaar", draft.back, highIsGood = false) { v ->
+                        updateDraft { it.copy(back = v) }
+                    }
+                    ScoreQuestion("Energie", "leeg", "vol energie", draft.energy, highIsGood = true) { v ->
+                        updateDraft { it.copy(energy = v) }
+                    }
+                    ScoreQuestion("Gevoel", "slecht", "heel goed", draft.mood, highIsGood = true) { v ->
+                        updateDraft { it.copy(mood = v) }
+                    }
+                    if (!draft.isEmpty) {
+                        TextButton(onClick = { updateDraft { ScoresDraft() } }) { Text("${period.label} wissen") }
+                    }
                 }
 
                 // 4. Notitie

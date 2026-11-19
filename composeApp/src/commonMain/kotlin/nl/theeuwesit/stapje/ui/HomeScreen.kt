@@ -36,6 +36,8 @@ import kotlinx.datetime.minus
 import nl.theeuwesit.stapje.AppState
 import nl.theeuwesit.stapje.model.DayEntry
 import nl.theeuwesit.stapje.model.DayPart
+import nl.theeuwesit.stapje.model.Scores
+import nl.theeuwesit.stapje.model.TimeOfDay
 import nl.theeuwesit.stapje.reminder.ReminderController
 import nl.theeuwesit.stapje.reminder.ReminderLogic
 
@@ -168,11 +170,30 @@ private fun TodayCard(today: LocalDate, entry: DayEntry?, isWorkday: Boolean, on
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ScoreBadges(entry: DayEntry) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        ScoreBadge("Pijn", entry.painOverall, highIsGood = false)
-        ScoreBadge("Rug", entry.backPain, highIsGood = false)
-        ScoreBadge("Energie", entry.energy, highIsGood = true)
-        ScoreBadge("Gevoel", entry.mood, highIsGood = true)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        TimeOfDay.entries.forEach { t ->
+            val s = entry.scores[t]
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(t.label, style = MaterialTheme.typography.labelLarge)
+                if (s == null) {
+                    Text(
+                        "Nog niet ingevuld",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        ScoreBadge("Pijn", s.painOverall, highIsGood = false)
+                        ScoreBadge("Rug", s.backPain, highIsGood = false)
+                        ScoreBadge("Energie", s.energy, highIsGood = true)
+                        ScoreBadge("Gevoel", s.mood, highIsGood = true)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -206,9 +227,10 @@ private fun MissingCard(missing: List<LocalDate>, today: LocalDate, onOpenDay: (
 private fun WeekCard(weekEntries: List<DayEntry>) {
     val hours = weekEntries.sumOf { it.hours }
     val worked = weekEntries.count { it.dayPart != DayPart.NIET_GEWERKT }
-    fun avg(selector: (DayEntry) -> Int) = formatOneDecimal(weekEntries.map(selector).average())
+    val weekScores = weekEntries.flatMap { it.scores.values }
+    fun avg(selector: (Scores) -> Int) = formatOneDecimal(weekScores.map(selector).average())
     Section("Deze week", subtitle = "$worked ${if (worked == 1) "dag" else "dagen"} gewerkt, ${formatHours(hours)} uur") {
-        Text(
+        if (weekScores.isNotEmpty()) Text(
             "Gemiddeld: pijn ${avg { it.painOverall }} · rug ${avg { it.backPain }} · " +
                 "energie ${avg { it.energy }} · gevoel ${avg { it.mood }}",
             style = MaterialTheme.typography.bodyMedium,

@@ -6,7 +6,7 @@ Compose Multiplatform-app (Android + web) om per werkdag bij te houden:
 
 - **Gewerkt**: hele dag / ochtend / middag / niet gewerkt, plus het aantal uren (stappen van een half uur)
 - **Wat gedaan**: activiteiten om aan te tikken (zelf aan te passen), plus een schakelaar **Labwerk** met uren en omschrijving
-- **Hoe gaat het**: pijn algemeen, rugpijn, energie en gevoel, elk met één tik op een schaal van 0 tot 10
+- **Hoe gaat het**: per dagdeel (ochtend, middag, avond) pijn algemeen, rugpijn, energie en gevoel, elk met één tik op een schaal van 0 tot 10. Een dagdeel mag leeg blijven en later worden aangevuld.
 - **Herinnering** op een zelf gekozen tijdstip, alleen op werkdagen die nog niet zijn ingevuld
 
 ## Zo snel mogelijk invullen
@@ -21,19 +21,21 @@ Compose Multiplatform-app (Android + web) om per werkdag bij te houden:
 ## Projectstructuur
 
 ```
-composeApp/src/
-  commonMain/   gedeelde code: model, opslag (JSON), herinneringslogica, alle schermen
-  androidMain/  MainActivity, SharedPreferences, AlarmManager, meldingen, herstart-receiver
+composeApp/src/          gedeelde Kotlin Multiplatform-module
+  commonMain/   model, opslag (JSON), herinneringslogica, alle schermen
+  androidMain/  Android-specifieke stukjes van de gedeelde code (terugknop)
   wasmJsMain/   web-ingang, localStorage, browsermeldingen, index.html
+androidApp/src/main/     Android-app
+                MainActivity, SharedPreferences, AlarmManager, meldingen, herstart-receiver
 ```
 
 ## Bouwen en draaien
 
-Je hebt JDK 17 of nieuwer en de Android SDK nodig. Android Studio (met de Kotlin Multiplatform-plugin) of IntelliJ IDEA werkt het makkelijkst.
+Je hebt JDK 21 of nieuwer en de Android SDK nodig. Android Studio (met de Kotlin Multiplatform-plugin) of IntelliJ IDEA werkt het makkelijkst.
 
 ```bash
 # Android: debug-APK installeren op een aangesloten telefoon/emulator
-./gradlew :composeApp:installDebug
+./gradlew :androidApp:installDebug
 
 # Web: ontwikkelserver met live reload (opent http://localhost:8080)
 ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
@@ -75,5 +77,5 @@ Eenmalig instellen:
 
 ## Versies
 
-Kotlin 2.1.21 · Compose Multiplatform 1.8.2 · supabase-kt 3.1.4 · Ktor 3.1.3 · AGP 8.7.3 · Gradle 8.14.3 · minSdk 26 / targetSdk 35.
+Kotlin 2.4.21 · Compose Multiplatform 1.12.2 · supabase-kt 3.1.4 · Ktor 3.1.3 · AGP 9.5.1 · Gradle 9.9.1 · minSdk 26 / targetSdk 37.
 Pas `gradle/libs.versions.toml` aan als je nieuwere versies wilt gebruiken.
