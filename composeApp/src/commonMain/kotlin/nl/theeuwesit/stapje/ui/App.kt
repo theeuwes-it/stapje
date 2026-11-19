@@ -51,6 +51,8 @@ fun App(platform: Platform, openTodaySignal: Int = 0, resumeSignal: Int = 0) {
         sync?.observeSession { if (sync.syncNow()) state.reload() }
     }
 
+    LaunchedEffect(sync) { sync?.observeLoginErrors() }
+
     LaunchedEffect(resumeSignal) { if (resumeSignal > 0) syncInBackground() }
 
     LaunchedEffect(openTodaySignal) {
@@ -81,6 +83,7 @@ fun App(platform: Platform, openTodaySignal: Int = 0, resumeSignal: Int = 0) {
         if (sync != null && !sync.signedIn && !state.syncPromptDismissed) {
             @Composable {
                 SyncPromptCard(
+                    error = sync.error,
                     onSignIn = { scope.launch { sync.signIn() } },
                     onDismiss = state::dismissSyncPrompt,
                 )

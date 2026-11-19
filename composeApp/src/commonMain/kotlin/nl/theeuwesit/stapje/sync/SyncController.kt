@@ -41,6 +41,8 @@ class SyncController(
                 is SessionStatus.Authenticated -> {
                     val wasSignedIn = signedIn
                     signedIn = true
+                    Cloud.clearLoginError()
+                    error = null
                     email = status.session.user?.email
                     if (!wasSignedIn) onSignedIn()
                 }
@@ -55,15 +57,21 @@ class SyncController(
         }
     }
 
+    /** Blijft lopen; toont fouten bij de terugkeer na inloggen. */
+    suspend fun observeLoginErrors() {
+        Cloud.loginError.collect { message -> if (message != null) error = message }
+    }
+
     suspend fun signIn() {
         error = null
+        Cloud.clearLoginError()
         try {
             val url = redirectUrl
             if (url != null) client.auth.signInWith(Google, redirectUrl = url) else client.auth.signInWith(Google)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            error = "Inloggen is niet gelukt. Probeer het opnieuw."
+            error = "Inloggen is niet gelukt: ${e.message ?: e::class.simpleName}"
         }
     }
 
