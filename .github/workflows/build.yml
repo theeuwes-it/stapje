@@ -27,6 +27,9 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v6
       - name: Android-app en website bouwen
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: ./gradlew :androidApp:assembleDebug :composeApp:wasmJsBrowserDistribution
       - name: APK bewaren
         uses: actions/upload-artifact@v7
@@ -77,6 +80,8 @@ jobs:
         run: echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
       - name: Ondertekende release-bundle bouwen
         env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           STAPJE_KEYSTORE_FILE: ${{ runner.temp }}/upload.jks
           STAPJE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           STAPJE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}

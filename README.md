@@ -113,7 +113,16 @@ Eenmalig instellen:
 4. **Supabase → Authentication → URL Configuration.**
    - *Site URL*: het adres van de website, bijvoorbeeld `https://theeuwes-it.github.io/stapje/`.
    - *Redirect URLs*: voeg zowel dat adres toe als `stapje://login` (voor de Android-app).
-5. **App.** Vul in `composeApp/src/commonMain/kotlin/nl/theeuwesit/stapje/sync/SupabaseConfig.kt` de project-URL en de *publishable key* (of *anon key*) in. Die sleutel is bedoeld om in apps te staan. De gegevens worden beschermd door Row Level Security.
+5. **App.** De project-URL en de *publishable key* (of *anon key*) komen uit *Project Settings → API*. Die sleutel is bedoeld om in apps te staan. De gegevens worden beschermd door Row Level Security. De build zet ze in een gegenereerd `SupabaseConfig.kt`:
+   - **GitHub Actions:** maak bij *Settings → Secrets and variables → Actions → Variables* de variabelen `SUPABASE_URL` en `SUPABASE_PUBLISHABLE_KEY` aan. De workflow gebruikt ze voor de website, de APK en de Play-bundle.
+   - **Lokaal:** zet ze in `local.properties` (staat niet in git):
+     ```properties
+     supabase.url=https://<jouw-project>.supabase.co
+     supabase.publishableKey=sb_publishable_…
+     ```
+     Omgevingsvariabelen `SUPABASE_URL` en `SUPABASE_PUBLISHABLE_KEY` gaan voor.
+
+   Zonder deze gegevens werkt de app alleen lokaal, zonder inloggen.
 
 ## Versies
 
